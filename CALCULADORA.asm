@@ -102,7 +102,10 @@ welcome_user:
     ret
 
 menu:
-    enter 0,0
+    enter 4,0
+    push eax
+
+    mov dword [ebp-4], 0
 
     menu_loop: 
         call print_menu
@@ -110,12 +113,21 @@ menu:
         call read_digit
 
         cmp al, 7 ; SAIR
-        je exit
+        je menu_exit
+
+        call read_num32
+        mov [ebp-4], eax
+
+        call read_num32
+
+        add eax, [ebp-4]
 
         jmp menu_loop
 
-    leave
-    ret
+    menu_exit:   
+        pop eax 
+        leave
+        ret
 
 print_menu:
     enter 0,0
@@ -300,6 +312,7 @@ read_num32:
     jz read_char_loop ; Se ZF = 1 (al e bl forem iguals), pula para o loop sem incrementar o index
     inc esi
 
+    xor eax, eax
     read_char_loop:
         movzx ecx, BYTE [num_buffer+esi]
         cmp ecx, 0x30
