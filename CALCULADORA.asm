@@ -31,10 +31,16 @@ section .data
     MENU_7         db '- 7: SAIR',
     MENU_7_LEN     EQU $-MENU_7
 
+    MAX_16BIT_NUM     EQU 32767 ; + e -
+    MAX_16BIT_LEN     EQU 7 ; sinal + 5 digitos + \n
+    MAX_32BIT_NUM     EQU 2147483647 ; + e -
+    MAX_32BIT_LEN     EQU 12 ; sinal + 10 digitos + \n
+
 section .bss
+    digit_buffer resb 1
+    num_buffer resb MAX_32BIT_LEN
     precision resb 1
     username resb 16
-    option resb 1
 
 section .text
 global _start
@@ -57,17 +63,9 @@ get_precision:
     push PRECISION_LEN
     call print
 
-    push precision
-    push 1
-    call read_string
+    call read_digit
 
-    xor eax, eax
-    mov al, [precision]
-    sub al, 0x30
     mov [precision], al
-
-    ; push precision
-    ; call printnum
 
     pop eax
     leave
@@ -106,7 +104,15 @@ welcome_user:
 menu:
     enter 0,0
 
-    call print_menu
+    menu_loop: 
+        call print_menu
+
+        call read_digit
+
+        cmp al, 7 ; SAIR
+        je exit
+
+        jmp menu_loop
 
     leave
     ret
@@ -149,10 +155,9 @@ print_menu:
     leave
     ret
 
-
 ; FUNCOES AUXILIARES
 
-; printnum (value)
+; printnum (*value)
 printnum:
     enter 0,0
     push eax
@@ -251,3 +256,70 @@ read_string:
     leave
     ret 8
 
+; read_digit () -> digito (em al)
+read_digit:
+    enter 0,0
+
+    push digit_buffer
+    push 2
+    call read_string
+
+    xor eax, eax
+    mov al, [digit_buffer]
+    sub al, 0x30
+
+    leave
+    ret
+
+
+; read_num32 () -> numero
+read_num32:
+    enter 0,0
+    push esi
+    push ebx
+    push ecx
+
+    xor esi, esi
+    xor eax, eax
+    xor ebx, ebx
+    xor ecx, ecx
+
+    push num_buffer
+    push MAX_32BIT_LEN
+    call read_string
+
+    ; bl = 1 se negativo, bl = 0 se positivo
+
+    cmp BYTE [num_buffer], 0x2D
+    SETE bl ; se number_s[0] == '-' -> bl = 1
+
+    cmp BYTE [num_buffer], 0X2B
+    SETE cl ; se number_s[0] == '+' -> cl = 1
+
+    cmp cl, bl ; al = 1 se for caracter de sinal
+    jz read_char_loop ; Se ZF = 1 (al e bl forem iguals), pula para o loop sem incrementar o index
+    inc esi
+
+    read_char_loop:
+        movzx ecx, BYTE [num_buffer+esi]
+        cmp ecx, 0x30
+        jb read_loop_end
+        cmp ecx, 0x39
+        ja read_loop_end
+        sub ecx, 0x30
+        imul eax, eax, 10
+        add eax, ecx
+        inc esi
+        jmp read_char_loop
+
+    read_loop_end:
+        cmp bl, 0
+        je read_end
+        neg eax
+        
+    read_end:
+        pop ecx
+        pop ebx
+        pop esi
+    leave
+    ret
