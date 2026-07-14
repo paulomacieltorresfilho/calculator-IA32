@@ -31,6 +31,8 @@ section .data
     MENU_7         db '- 7: SAIR',
     MENU_7_LEN     EQU $-MENU_7
 
+    MINUS_SIGN        db 0x2D
+
     MAX_16BIT_NUM     EQU 32767 ; + e -
     MAX_16BIT_LEN     EQU 7 ; sinal + 5 digitos + \n
     MAX_32BIT_NUM     EQU 2147483647 ; + e -
@@ -116,11 +118,10 @@ menu:
         je menu_exit
 
         call read_num32
-        mov [ebp-4], eax
 
-        call read_num32
+        push eax
+        call print_num32
 
-        add eax, [ebp-4]
 
         jmp menu_loop
 
@@ -246,6 +247,49 @@ println:
     leave
     ret 8
 
+; print_num32 (value)
+print_num32:
+   enter 0,0
+    
+    mov eax, [EBP+8]
+    xor esi, esi
+
+    cmp eax, 0
+    jge print_num32_aux_loop
+    push MINUS_SIGN
+    push 1
+    call print
+    mov eax, [EBP+8] 
+    neg eax
+
+    
+    print_num32_aux_loop:
+        xor edx, edx
+        mov ecx, 10
+        div ecx
+        add dl, 0x30
+        push dx
+        cmp eax, 0
+        je print_num32_loop
+        inc esi
+        jmp print_num32_aux_loop
+
+    print_num32_loop:
+        pop dx
+        mov [digit_buffer], dl
+        mov eax, 4
+        mov ebx, 1
+        mov ecx, digit_buffer
+        mov edx, 1
+        int 80h
+        dec esi
+        cmp esi, 0
+        jge print_num32_loop  
+
+    print_num32_end:
+        leave
+        ret 4
+
 ;  read_string (*str, size) -> tamanho da string
 read_string:
     enter 0,0
@@ -309,10 +353,11 @@ read_num32:
     SETE cl ; se number_s[0] == '+' -> cl = 1
 
     cmp cl, bl ; al = 1 se for caracter de sinal
-    jz read_char_loop ; Se ZF = 1 (al e bl forem iguals), pula para o loop sem incrementar o index
+    jz read_char_setup ; Se ZF = 1 (al e bl forem iguals), pula para o loop sem incrementar o index
     inc esi
 
-    xor eax, eax
+    read_char_setup:
+        xor eax, eax
     read_char_loop:
         movzx ecx, BYTE [num_buffer+esi]
         cmp ecx, 0x30
