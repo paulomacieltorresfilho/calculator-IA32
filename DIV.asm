@@ -1,28 +1,36 @@
 section .text
-global soma
+global divisao
 extern read_num32
 extern read_num16
 
-soma:
+divisao:
     enter 0,0
     cmp byte [EBP+8], 0
-    je soma16
+    je divisao16
 
     push ebx
+    push edx
     call read_num32
     mov ebx, eax
 
     call read_num32
-    
-    add ebx, eax
-    mov eax, ebx
 
+    mov edx, eax
+    mov eax, ebx
+    mov ebx, edx ; eax -> primeiro numero, ebx -> divisor
+
+    cdq ; estende o sinal de eax para edx (edx:eax)
+
+    idiv ebx
+    
+    pop edx
     pop ebx
     leave
     ret 4
 
-soma16:
+divisao16:
     push bx
+    push dx
     xor eax, eax
 
     call read_num16
@@ -30,9 +38,15 @@ soma16:
 
     call read_num16
 
-    add bx, ax
+    mov dx, ax
     mov ax, bx
+    mov bx, dx
 
+    cwd ; estende o sinal de ax para dx (dx:ax)
+
+    idiv bx
+    
+    pop dx
     pop bx
     leave
     ret 4

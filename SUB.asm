@@ -1,12 +1,12 @@
 section .text
-global soma
+global subtracao
 extern read_num32
 extern read_num16
 
-soma:
+subtracao:
     enter 0,0
     cmp byte [EBP+8], 0
-    je soma16
+    je subtracao16
 
     push ebx
     call read_num32
@@ -14,14 +14,14 @@ soma:
 
     call read_num32
     
-    add ebx, eax
+    sub ebx, eax
     mov eax, ebx
 
     pop ebx
     leave
     ret 4
 
-soma16:
+subtracao16:
     push bx
     xor eax, eax
 
@@ -30,7 +30,7 @@ soma16:
 
     call read_num16
 
-    add bx, ax
+    sub bx, ax
     mov ax, bx
 
     pop bx
