@@ -49,7 +49,7 @@ section .bss
 
 section .text
 global _start, read_num32, read_num16
-extern soma, subtracao, multiplicacao, divisao, mod
+extern soma, subtracao, multiplicacao, divisao, mod, exponenciacao
 
 _start:
     call welcome_user
@@ -133,6 +133,9 @@ menu:
         cmp al, 4
         je menu_divisao
 
+        cmp al, 5
+        je menu_exp
+
         cmp al, 6
         je menu_mod
 
@@ -162,6 +165,12 @@ menu:
     menu_mod:
         push dword [precision]
         call mod
+        jmp menu_print_result
+
+    menu_exp:
+        push dword [precision]
+        call exponenciacao
+        jo menu_overflow
         jmp menu_print_result
 
     menu_print_result:
